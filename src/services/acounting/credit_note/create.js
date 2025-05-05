@@ -1,12 +1,6 @@
 import httpClient from '../../../utils/httpClient.js';
 
-function addDays(dateStr, days) {
-    const date = new Date(dateStr);
-    date.setDate(date.getDate() + days);
-    return date.toISOString().split('T')[0];  // Format YYYY-MM-DD
-}
-
-async function createInvoice(customerId, invoiceDate, invoice, resi, itemIds, quantities, sellPrice) {
+async function createCreditNote(customerId, creditNoteDate, invoice, itemIds, quantities, sellPrice, open) {
     console.log('masuk invoice');
     
     if (!Array.isArray(itemIds) || !Array.isArray(quantities) || itemIds.length !== quantities.length || itemIds.length !== sellPrice.length) {
@@ -24,24 +18,22 @@ async function createInvoice(customerId, invoiceDate, invoice, resi, itemIds, qu
         rate: sellPrice[index],
     }));
 
-    const dueDate = addDays(invoiceDate, 30);
     const data = {
         customer_id: customerId,
-        invoice_date: invoiceDate,
-        due_date: dueDate,
-        invoice_no: invoice,
-        reference_no: resi,
-        delivered: false,
+        credit_note_date: creditNoteDate,
+        reference_no: invoice,
+        open: open || false,
         entries: entries
     };
 
     try {
-        const response = await httpClient.post('/sales/invoices', data);
+        const response = await httpClient.post('/sales/credit_notes', data);
         
         if (response && response.status === 200) {
+            
             return response.data;  // Assuming the data is returned in the 'data' property
         } else {
-            console.error('Failed to create invoice, status:', response.status);
+            // console.error('Failed to create invoice, status:', response.status);
             throw new Error('Invoice creation failed');
         }
     } catch (error) {
@@ -50,4 +42,4 @@ async function createInvoice(customerId, invoiceDate, invoice, resi, itemIds, qu
     }
 }
 
-export { createInvoice };
+export { createCreditNote };

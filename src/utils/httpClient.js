@@ -3,7 +3,7 @@ import * as auth from '../services/acounting/auth/auth.js';
 
 const httpClient = axios.create({
   baseURL: process.env.ACCOUNTING || 'http://localhost/api',
-  timeout: 10000,
+  timeout: 1000,
   headers: {
     'Content-Type': 'application/json',
   },

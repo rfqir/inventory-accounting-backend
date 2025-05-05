@@ -5,10 +5,9 @@ import { orderTokopedia } from '../../services/excel/orderTokopedia.js';
 import { getCustomer } from '../../services/acounting/customer/customer.js';
 import { getItems } from '../../services/acounting/items/items.js';
 import { createInvoice } from '../../services/acounting/sales_invoice/create.js';
-import { getInvoice } from '../../services/acounting/sales_invoice/get.js';
 
 // Subscribe to the "prosesOrder" task from Camunda
-client.subscribe('prosesOrder', async ({ task, taskService }) => {
+client.subscribe('cashIn', async ({ task, taskService }) => {
   // Retrieve file name variable from the task
   const fileName = task.variables.get("fileName");
 
@@ -51,8 +50,7 @@ client.subscribe('prosesOrder', async ({ task, taskService }) => {
       if (orderStatus !== 'Perlu Dikirim  ') {
         continue;
       }
-      const findInvoice = await getInvoice(invoice);
-      if (findInvoice) {continue;}
+
       // Get customer ID using the buyer's username
       const customerId = await getCustomer(username);
 

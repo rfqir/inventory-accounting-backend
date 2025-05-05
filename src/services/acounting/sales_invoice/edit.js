@@ -6,7 +6,7 @@ function addDays(dateStr, days) {
     return date.toISOString().split('T')[0];  // Format YYYY-MM-DD
 }
 
-async function createInvoice(customerId, invoiceDate, invoice, resi, itemIds, quantities, sellPrice) {
+async function editInvoice(customerId, invoiceDate, invoice, resi, itemIds, quantities, sellPrice) {
     console.log('masuk invoice');
     
     if (!Array.isArray(itemIds) || !Array.isArray(quantities) || itemIds.length !== quantities.length || itemIds.length !== sellPrice.length) {
@@ -31,12 +31,15 @@ async function createInvoice(customerId, invoiceDate, invoice, resi, itemIds, qu
         due_date: dueDate,
         invoice_no: invoice,
         reference_no: resi,
-        delivered: false,
+        delivered: true,
         entries: entries
     };
 
     try {
         const response = await httpClient.post('/sales/invoices', data);
+        
+        // Log the response for debugging
+        console.log('Invoice response:', response);
         
         if (response && response.status === 200) {
             return response.data;  // Assuming the data is returned in the 'data' property
@@ -50,4 +53,4 @@ async function createInvoice(customerId, invoiceDate, invoice, resi, itemIds, qu
     }
 }
 
-export { createInvoice };
+export { editInvoice };
