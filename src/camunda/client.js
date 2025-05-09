@@ -5,5 +5,6 @@ const client = new Client({
   use: logger,
   asyncResponseTimeout: 100,
 });
+console.log(process.env.ENDPOINT_CAMUNDA);
 
 export default client;

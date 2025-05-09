@@ -9,6 +9,11 @@ const client = new Client({
   database: 'db_configure'
 });
 
+if (condition) {
+  
+} else {
+  
+}
 client.connect()
   .then(() => {
     console.log('Koneksi ke PostgreSQL berhasil!');

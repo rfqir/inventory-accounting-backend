@@ -7,18 +7,25 @@ import { createPaymentReceive } from '../../services/acounting/payment/createPay
 import { delivered } from '../../services/acounting/sales_invoice/delivered.js';
 
 // Subscribe to the "prosesOrder" task from Camunda
-client.subscribe('cancel', async ({ task, taskService }) => {
+client.subscribe('returOrder', async ({ task, taskService }) => {
   const invoice = task.variables.get('invoice');
+  const itemsCamunda = task.variables.get('items');
+  const quantitiesCamunda = task.variables.get('quantities');
+  
+  const itemsArray = itemsCamunda.split(',');
+  const quantitiesArray = quantitiesCamunda.split(',').map(Number);
   try {
       const responseGetInvoice = await getInvoice(invoice);
+      
       try {
         const customerId = responseGetInvoice.customer_id; // customer ID
         const currentDate = new Date().toISOString().split('T')[0]; // current date
-
+        
         const itemIds = []; // items array
         const quantities = []; // quantity array
         const prices = []; // prices array
         const totals = [];
+        const codes = [];
         // get items in entries data
         for (const entriess of responseGetInvoice.entries) {
             const {item} = entriess
@@ -26,34 +33,35 @@ client.subscribe('cancel', async ({ task, taskService }) => {
             const quantity = entriess.quantity;
             const price = entriess.rate;
             const totalPrice = entriess.total;
-
+            const code = item.code
             itemIds.push(id);
             quantities.push(quantity);
             prices.push(price);
             totals.push(totalPrice);
+            codes.push(code);
         }
-        const createCredit = await createCreditNote(customerId, currentDate, invoice, itemIds, quantities,prices, true);
+        
+        const resultId = itemsArray.map(code => {
+            const index = codes.indexOf(code); // cari index di codes
+            return itemIds[index]; // ambil itemId berdasarkan index
+          });
+        const resultPrice = itemsArray.map(code => {
+            const index = codes.indexOf(code); // cari index di codes
+            return prices[index]; // ambil itemId berdasarkan index
+          });
+
+        const createCredit = await createCreditNote(customerId, currentDate, invoice, resultId, quantitiesArray,resultPrice, true);
         try {
-            const amount = totals.reduce((acc, curr) => acc + curr, 0)
+            const amount = resultPrice.reduce((acc, curr) => acc + curr, 0)
             
             const refund = await refundCreditNote(createCredit.id, currentDate, amount, invoice);
-            try {
-                const responseDelivered = await delivered(responseGetInvoice.id);
-                try {
-                    const collect = await createPaymentReceive(customerId, currentDate, amount, 1000, responseGetInvoice.id)
-                    await taskService.complete(task);
-                } catch (error) {
-                    console.error('error payment cancel');
-                }
-            } catch (error) {
-                console.error('error deliver cancel');   
-            }
+            await taskService.complete(task);
         } catch (error) {
             console.error("error refund");            
         }
       } catch (error) {
         console.error('status: ');
-        console.error('data: ');
+        console.error('data catch: ', error);
       }
   } catch (error) {
     console.error('status: ');
