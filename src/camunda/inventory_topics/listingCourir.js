@@ -3,7 +3,7 @@ import { Variables } from 'camunda-external-task-client-js';
 import { getMoOrder } from '../../graphql/query/listing.js';
 
 // Subscribe to the "prosesOrder" task from Camunda
-client.subscribe('listingCourir', async ({ task, taskService }) => {
+client.subscribe('listingCourier', async ({ task, taskService }) => {
   const courier_name = task.variables.get('courier_name');
   try {
       const responseGetInvoice = await getMoOrder(courier_name);
