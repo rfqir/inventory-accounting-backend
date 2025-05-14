@@ -7,7 +7,8 @@ async function getMoOrder(courier_name) {
       mo_order(
         where: {
           courier_name: { _eq: $courier_name },
-          categorized_at: { _is_null: false }
+          categorized_at: { _is_null: false },
+          handover_to_courier_at: {_is_null: true}
         }
       ) {
         invoice

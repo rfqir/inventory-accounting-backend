@@ -4,7 +4,7 @@ import { getInvoice } from '../../services/acounting/sales_invoice/get.js';
 import { delivered } from '../../services/acounting/sales_invoice/delivered.js';
 
 // Subscribe to the "prosesOrder" task from Camunda
-client.subscribe('deliveredInvoice', async ({ task, taskService }) => {
+client.subscribe('delivered', async ({ task, taskService }) => {
   const invoice = task.variables.get('invoice');
   try {
       const responseGetInvoice = await getInvoice(invoice);
