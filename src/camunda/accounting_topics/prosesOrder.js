@@ -1,4 +1,4 @@
-import client from '../client.js';
+import client,{ handleFailureDefault } from '../client.js';
 import { Variables } from 'camunda-external-task-client-js';
 import { orderShopee } from '../../services/excel/orderShopee.js';
 import { orderTokopedia } from '../../services/excel/orderTokopedia.js';
@@ -8,6 +8,9 @@ import { createInvoice } from '../../services/acounting/sales_invoice/create.js'
 import { getInvoice } from '../../services/acounting/sales_invoice/get.js';
 import { insertMoOrderShop } from '../../graphql/mutation/insertMoOrderShop.js';
 import { insertMoOrder } from '../../graphql/mutation/insertMoOrder.js';
+import { updateStatusMp } from '../../graphql/mutation/updateStatusMoOrder.js';
+import { insertMoOrderCost } from '../../graphql/mutation/insertMoOrderCost.js';
+import { getItem } from '../../services/inventory/stock/getItemInventree.js';
 
 // Subscribe to the "prosesOrder" task from Camunda
 client.subscribe('processOrder', async ({ task, taskService }) => {
@@ -47,7 +50,8 @@ client.subscribe('processOrder', async ({ task, taskService }) => {
         username,
         shipingProvider,
         orderStatus,
-        items
+        items,
+        ShippingFee
       } = order;
       
       // Gunakan kondisi original untuk menghindari perubahan logika
@@ -66,6 +70,7 @@ client.subscribe('processOrder', async ({ task, taskService }) => {
         )
       ) {
         console.log('skip: ', orderStatus);
+        updateStatusMp(orderStatus, invoice)
         continue;
       }
       const findInvoice = await getInvoice(invoice);
@@ -84,7 +89,8 @@ client.subscribe('processOrder', async ({ task, taskService }) => {
         const amount = item.amount;
         const startingPrice = item.startingPrice;
         const productName = item.productName;
-        await insertMoOrderShop(invoice, noResi, productName, amount, sku)
+        const getItemInventree = await getItem(sku);
+        await insertMoOrderShop(invoice, noResi, productName, amount, sku, getItemInventree.part)
         // Get item ID from SKU
         const itemId = await getItems(sku);
         itemIds.push(itemId);
@@ -126,7 +132,7 @@ client.subscribe('processOrder', async ({ task, taskService }) => {
         quantities,
         prices
       );
-
+      // await insertMoOrderCost(invoice, ShippingFee)
       // Store invoice and shipping provider info for Camunda variables
       invoiceCamunda.push(invoice);
       resiCamunda.push(noResi);
@@ -155,7 +161,9 @@ client.subscribe('processOrder', async ({ task, taskService }) => {
     // Complete the task and send variables to the process instance
     await taskService.complete(task,variablesCamunda);
   } catch (error) {
-    // Handle and log any errors during the process
-    console.error('Failed to process orders:', error);
+    console.error('error processOder');
+    console.error('data: ' + error);
+    await handleFailureDefault(taskService, task, error)
+    throw error;
   }
 });

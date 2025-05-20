@@ -1,15 +1,18 @@
-import client from '../client.js';
+import client,{ handleFailureDefault } from '../client.js';
 import { Variables } from 'camunda-external-task-client-js';
 import { getInvoice } from '../../services/acounting/sales_invoice/get.js';
 import { createCreditNote } from '../../services/acounting/credit_note/create.js';
+import { editCreditNote } from '../../services/acounting/credit_note/edit.js';
 import { refundCreditNote } from '../../services/acounting/payment/refundCreditNote.js';
 import { createPaymentReceive } from '../../services/acounting/payment/createPaymentRecieve.js';
 import { delivered } from '../../services/acounting/sales_invoice/delivered.js';
+import { getCredit } from '../../services/acounting/credit_note/get.js';
 
 // Subscribe to the "prosesOrder" task from Camunda
 client.subscribe('cancelOrder', async ({ task, taskService }) => {
   const invoice = task.variables.get('invoice');
   try {
+      await taskService.complete(task);
       const responseGetInvoice = await getInvoice(invoice);
       try {
         const customerId = responseGetInvoice.customer_id; // customer ID
@@ -32,7 +35,14 @@ client.subscribe('cancelOrder', async ({ task, taskService }) => {
             prices.push(price);
             totals.push(totalPrice);
         }
-        const createCredit = await createCreditNote(customerId, currentDate, invoice, itemIds, quantities,prices, true);
+        const getCreditNote = await getCredit(invoice);
+        let createCredit;
+        if (getCreditNote){
+          createCredit = getCreditNote
+          await editCreditNote(createCredit.id,customerId, currentDate, invoice, itemIds, quantities,prices, true)
+        }else{
+           createCredit = await createCreditNote(customerId, currentDate, invoice, itemIds, quantities,prices, true);
+        }
         try {
             const amount = totals.reduce((acc, curr) => acc + curr, 0)
             
@@ -41,22 +51,26 @@ client.subscribe('cancelOrder', async ({ task, taskService }) => {
                 const responseDelivered = await delivered(responseGetInvoice.id);
                 try {
                     const collect = await createPaymentReceive(customerId, currentDate, amount, 1000, responseGetInvoice.id)
-                    await taskService.complete(task);
                 } catch (error) {
                     console.error('error payment cancel');
+                    throw error
                 }
             } catch (error) {
-                console.error('error deliver cancel');   
+                console.error('error deliver cancel');
+                throw error
             }
         } catch (error) {
-            console.error("error refund");            
+            console.error("error refundCreditNote");
+            throw error
         }
       } catch (error) {
-        console.error('status: ');
-        console.error('data: ');
+        console.error('edit / get creditNote ');
+        throw error;
       }
   } catch (error) {
-    console.error('status: ');
+    console.error('error canelOrder');
     console.error('data: ' + error.data);
+    await handleFailureDefault(taskService, task, error)
+    throw error;
   }
 });

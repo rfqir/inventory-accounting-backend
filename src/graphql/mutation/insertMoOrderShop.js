@@ -1,7 +1,7 @@
 // graphql/mutations/createOrder.js
 import httpClient from '../client.js';
 
-async function insertMoOrderShop(invoice, resi, product_name, quantity_order, sku_toko) {
+async function insertMoOrderShop(invoice, resi, product_name, quantity_order, sku_toko,part_pk) {
   const query = `
     mutation CreateOrder(
       $invoice: String!,
@@ -9,6 +9,7 @@ async function insertMoOrderShop(invoice, resi, product_name, quantity_order, sk
       $product_name: String!,
       $quantity_order: Int!,
       $sku_toko: String!
+      $part_pk: Int!
     ) {
       insert_mo_order_shop(objects: {
         invoice: $invoice,
@@ -16,6 +17,7 @@ async function insertMoOrderShop(invoice, resi, product_name, quantity_order, sk
         product_name: $product_name,
         quantity_order: $quantity_order,
         sku_toko: $sku_toko
+        part_pk: $part_pk
       }) {
         returning {
           id_shop
@@ -29,7 +31,7 @@ async function insertMoOrderShop(invoice, resi, product_name, quantity_order, sk
     }
   `;
 
-  const variables = { invoice, resi, product_name, quantity_order, sku_toko };
+  const variables = { invoice, resi, product_name, quantity_order, sku_toko, part_pk };
 
   try {
     const response = await httpClient.post('', { query, variables });

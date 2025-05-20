@@ -1,4 +1,4 @@
-import client from '../client.js';
+import client,{ handleFailureDefault } from '../client.js';
 import { Variables } from 'camunda-external-task-client-js';
 import { getInvoice } from '../../services/acounting/sales_invoice/get.js';
 import { createCreditNote } from '../../services/acounting/credit_note/create.js';
@@ -57,14 +57,18 @@ client.subscribe('returOrder', async ({ task, taskService }) => {
             const refund = await refundCreditNote(createCredit.id, currentDate, amount, invoice);
             await taskService.complete(task);
         } catch (error) {
-            console.error("error refund");            
+            console.error("error refund");  
+            throw error          
         }
       } catch (error) {
-        console.error('status: ');
-        console.error('data catch: ', error);
+        console.error('error create credit note');
+        console.error('data catch: ');
+        throw error
       }
   } catch (error) {
-    console.error('status: ');
+    console.error('error returOrder');
     console.error('data: ' + error.data);
+    await handleFailureDefault(taskService, task, error)
+    throw error;
   }
 });

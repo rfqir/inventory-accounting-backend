@@ -1,4 +1,4 @@
-import client from '../client.js';
+import client,{ handleFailureDefault } from '../client.js';
 import { Variables } from 'camunda-external-task-client-js';
 import { getInvoice } from '../../services/acounting/sales_invoice/get.js';
 import { createPaymentReceive } from '../../services/acounting/payment/createPaymentRecieve.js';
@@ -18,11 +18,13 @@ client.subscribe('collectedInvoice', async ({ task, taskService }) => {
             await taskService.complete(task);
         }
       } catch (error) {
-        console.error('status: ' + error.status);
-        console.error('data: ' + error.data);
+        console.error('error createPaymentReceive');
+        throw error
       }
   } catch (error) {
-    console.error('status: ' + error.status);
+    console.error('error collectedInvoice');
     console.error('data: ' + error.data);
+    await handleFailureDefault(taskService, task, error)
+    throw error;
   }
 });

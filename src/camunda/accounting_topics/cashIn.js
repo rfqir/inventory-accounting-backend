@@ -1,4 +1,4 @@
-import client from '../client.js';
+import client,{ handleFailureDefault } from '../client.js';
 import { Variables } from 'camunda-external-task-client-js';
 import { orderShopee } from '../../services/excel/orderShopee.js';
 import { orderTokopedia } from '../../services/excel/orderTokopedia.js';
@@ -99,7 +99,9 @@ client.subscribe('cashIn', async ({ task, taskService }) => {
     // Complete the task and send variables to the process instance
     await taskService.complete(task, variablesCamunda);
   } catch (error) {
-    // Handle and log any errors during the process
-    console.error('Failed to process orders:', error);
+    console.error('error cashIn');
+    console.error('data: ' + error.data);
+    await handleFailureDefault(taskService, task, error)
+    throw error;
   }
 });

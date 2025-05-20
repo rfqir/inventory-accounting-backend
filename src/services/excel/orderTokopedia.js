@@ -17,32 +17,28 @@ async function orderTokopedia(fileName) {
     if (!orders[noPesanan]) {
       // Data utama (ambil kolom penting saja)
       orders[noPesanan] = {
-        'Order ID': noPesanan,
-        'Tracking ID': row['Tracking ID'],
-        'Order Status': row['Order Status'],
-        'Order Substatus': row['Order Substatus'],
-        'Cancelation/Return Type': row['Cancelation/Return Type'],
-        'Paid Time': row['Paid Time'],
-        'Delivery Option': row['Delivery Option'],
-        'Delivery Option': row['Delivery Option'],
-        'Shipping Provider Name': row['Shipping Provider Name'],
-        'Buyer Username': row['Buyer Username'],
-        'Recipient': row['Recipient'],
-        'Regency and City': row['Regency and City'],
+        'invoice': noPesanan,
+        'noResi': row['Tracking ID'],
+        'orderStatus': `${row['Order Status']} ${row['Order Substatus']} ${row['Cancelation/Return Type']}`,
+        'paidTime': row['Paid Time'],
+        'totalPembayaran': row['Order Amount'],
+        'username': row['Buyer Username'],
+        'recipient': row['Recipient'],
+        'shipingProvider': `${row['Delivery Option']} ${row['Shipping Provider Name']}`,
+        'ShippingFee': row['Original Shipping Fee'],
         items: []
       };
     }
   
     // Masukkan produk ke items
     orders[noPesanan].items.push({
-      'SKU Induk': row['SKU Induk'],
-      'Product Name': row['Product Name'],
-      'Seller SKU': row['Seller SKU'],
-      'Variation': row['Variation'],
-      'SKU Unit Original Price': row['SKU Unit Original Price'],
-      'Harga Setelah Diskon': row['Harga Setelah Diskon'],
-      'Quantity': row['Quantity'],
-      'SKU Subtotal After Discount': row['SKU Subtotal After Discount'],
+      'productName': row['Product Name'],
+      'sku': row['Seller SKU'],
+      'variationName': row['Variation'],
+      'startingPrice': row['SKU Unit Original Price'],
+      'priceAfterDiscount': row['SKU Unit Original Price'] - row['SKU Platform Discount'],
+      'amount': row['Quantity'],
+      'totalPrice': row['SKU Subtotal Before Discount'],
       'Weight(kg)': row['Weight(kg)']
     });
   });

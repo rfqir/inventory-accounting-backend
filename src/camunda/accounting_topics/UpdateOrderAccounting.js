@@ -1,4 +1,4 @@
-import client from '../client.js';
+import client,{ handleFailureDefault } from '../client.js';
 import { Variables } from 'camunda-external-task-client-js';
 import { getInvoice } from '../../services/acounting/sales_invoice/get.js';
 import { createCreditNote } from '../../services/acounting/credit_note/create.js';
@@ -7,7 +7,6 @@ import { createCreditNote } from '../../services/acounting/credit_note/create.js
 client.subscribe('updateOrderAccounting', async ({ task, taskService }) => {
   const invoice = task.variables.get('invoice');
   const items = task.variables.get('items');
-  console.log('item: ', items);
 
   const beforeSku = items.map(item => item.before.sku_toko);
   const beforeQty = items.map(item => item.before.quantity_order);
@@ -70,11 +69,13 @@ client.subscribe('updateOrderAccounting', async ({ task, taskService }) => {
 
       await taskService.complete(task);
     } catch (error) {
-      console.error('status: ' + error.status);
-      console.error('data: ' + error.data);
+      console.error('error createCreditNote UpdateOrderAccounting');
+      throw error;
     }
   } catch (error) {
-    console.error('status: ' + error.status);
+    console.error('error UpdateOrderAccounting: ' + error.status);
     console.error('data: ' + error.data);
+    await handleFailureDefault(taskService, task, error)
+    throw error;
   }
 });

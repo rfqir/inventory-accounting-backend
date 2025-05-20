@@ -1,8 +1,7 @@
 import fs from 'fs';
 import XLSX from 'xlsx';
-console.log(await orderShopee('Order.all.20250426_20250429.xlsx'));
 // Baca file excel
-async function orderShopee(fileName) {
+async function cashInTokopedia(fileName) {
   const workbook = XLSX.readFile(`./assets/excel/${fileName}`);
   const sheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[sheetName];
@@ -12,34 +11,27 @@ async function orderShopee(fileName) {
   const orders = {};
   
   jsonData.forEach((row) => {
-    const noPesanan = row['Order/adjustment ID  '];
+    const noPesanan = row['Order/adjustment ID'];
   
     if (!orders[noPesanan]) {
       // Data utama (ambil kolom penting saja)
       orders[noPesanan] = {
         'invoice': noPesanan,
-        'noResi': row['No. Resi'],
-        'orderStatus': `${row['Status Pesanan']} ${row['Alasan Pembatalan']} ${row['Status Pembatalan/ Pengembalian']}`,
-        'paidTime': row['Waktu Pembayaran Dilakukan'],
-        'totalPembayaran': row['Total Pembayaran'],
-        'username': row['Username (Pembeli)'],
-        'recipient': row['Nama Penerima'],
-        'shipingProvider': row['Opsi Pengiriman'],
-        items: []
+        'Type': row['Type'],
+        'settlementAmount': row['Total settlement amount'],
+        'TotalRevenue': row['Total revenue'],
+        'SellerDiscounts': row['Seller discounts'],
+        'marketPlaceFee': row['TikTok Shop commission fee'],
+        'sfpFee': row['SFP service fee'],
+        'liveFee': row['LIVE Specials Service Fee'],
+        'voucerFee': row['Voucher Xtra Service Fee'],
+        'flashSaleFee': row['Brand Crazy Deals/Flash Sale service fee'],
+        'cashBackFee': row['Bonus cashback service fee'],
+        'paylaterFee': row['PayLater Handling Fee'],
+        'adjustmentAmount': row['Adjustment amount'],
+        'affiliateCommission': row['Affiliate commission']
       };
     }
-  
-    // Masukkan produk ke items
-    orders[noPesanan].items.push({
-      'productName': row['Nama Produk'],
-      'sku': row['Nomor Referensi SKU'],
-      'variationName': row['Nama Variasi'],
-      'startingPrice': row['Harga Awal'],
-      'priceAfterDiscount': row['Harga Setelah Diskon'],
-      'amount': row['Jumlah'],
-      'totalPrice': row['Total Harga Produk'],
-      'Weight': row['Berat Produk']
-    });
   });
   
   // Ubah object orders menjadi array
@@ -50,4 +42,4 @@ async function orderShopee(fileName) {
     
 }
 
-export {orderShopee};
+export {cashInTokopedia};

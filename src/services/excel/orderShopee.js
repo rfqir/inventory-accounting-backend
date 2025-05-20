@@ -24,6 +24,7 @@ async function orderShopee(fileName) {
         'username': row['Username (Pembeli)'],
         'recipient': row['Nama Penerima'],
         'shipingProvider': row['Opsi Pengiriman'],
+        'ShippingFee': row['Perkiraan Ongkos Kirim'],
         items: []
       };
     }

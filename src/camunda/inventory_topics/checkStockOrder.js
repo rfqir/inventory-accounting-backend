@@ -70,7 +70,6 @@ client.subscribe('checkStockOrder', async ({ task, taskService }) => {
           )
         )
       ) {
-        console.log('skip: ', orderStatus);
         continue;
       }
 
@@ -101,7 +100,6 @@ client.subscribe('checkStockOrder', async ({ task, taskService }) => {
       if (!allFalse) continue;
 
       await insertStockCheck(invoice, proc_inst_id);
-      console.log('false: ', allFalse);
 
       const courierName = getCourierName(shipingProvider);
 

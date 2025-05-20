@@ -1,4 +1,4 @@
-import client from '../client.js';
+import client,{ handleFailureDefault } from '../client.js';
 import { Variables } from 'camunda-external-task-client-js';
 import { updateInstance } from '../../graphql/mutation/updateInstance.js';
 import { insertMoOrder } from '../../graphql/mutation/insertMoOrder.js';
@@ -12,7 +12,9 @@ client.subscribe('insertInstanceOrder', async ({ task, taskService }) => {
     await updateInstance(instanceId,processDefinitionKey, invoice)
     await taskService.complete(task);
   } catch (error) {
-    console.error('status: ' + error.status);
-    console.error('data: ' + error);
+    console.error('error insertInstanceOrder');
+    console.error('data: ' + error.data);
+    await handleFailureDefault(taskService, task, error)
+    throw error;
   }
 });

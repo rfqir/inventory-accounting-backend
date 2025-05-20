@@ -6,6 +6,8 @@ async function getInvoice(invoice) {
         const invoicedata = response.data.sales_invoices.find(i => i.invoice_no === invoice);
         return invoicedata;
     } catch (error) {
+        console.error('gagal get invoice: ', error);
+        
         throw error;
     }
 }
