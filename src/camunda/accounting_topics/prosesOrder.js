@@ -11,6 +11,7 @@ import { insertMoOrder } from '../../graphql/mutation/insertMoOrder.js';
 import { updateStatusMp } from '../../graphql/mutation/updateStatusMoOrder.js';
 import { insertMoOrderCost } from '../../graphql/mutation/insertMoOrderCost.js';
 import { getItem } from '../../services/inventory/stock/getItemInventree.js';
+import { cancelInvoice } from '../../services/order/cancel.js';
 
 // Subscribe to the "prosesOrder" task from Camunda
 client.subscribe('processOrder', async ({ task, taskService }) => {
@@ -70,7 +71,11 @@ client.subscribe('processOrder', async ({ task, taskService }) => {
         )
       ) {
         console.log('skip: ', orderStatus);
-        updateStatusMp(orderStatus, invoice)
+        if (orderStatus.toLowerCase().includes('batal') || orderStatus.toLowerCase().includes('cancel')) {
+          await cancelInvoice(invoice, staorderStatustus)
+        } else {
+          updateStatusMp(orderStatus, invoice)
+        }
         continue;
       }
       const findInvoice = await getInvoice(invoice);
