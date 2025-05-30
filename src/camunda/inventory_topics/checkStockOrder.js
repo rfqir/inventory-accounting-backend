@@ -7,23 +7,8 @@ import { getInvoice } from '../../services/acounting/sales_invoice/get.js';
 import { insertStockCheck } from '../../graphql/mutation/insertMoOrderStockCheck.js';
 import { getLocation } from '../../services/inventory/stock/getLocation.js';
 import { getStock } from '../../services/inventory/stock/getStock.js';
-
-function getCourierName(provider) {
-  const p = provider.toLowerCase();
-
-  if (provider.includes("JNE")) return "JNE";
-  if (provider.includes("Rekomendasi")) return "rekomendasi";
-  if (provider.includes("SiCepat")) return "sicepat";
-  if ((p.includes("j&t") && p.includes("cargo")) || p.includes("kargo")) return "j&t cargo";
-  if (p.includes("j&t")) return "j&t";
-  if (provider.includes("Paxel")) return "paxel";
-  if (provider.includes("GTL(Regular)")) return "gtl";
-  if ((provider.includes("SPX") || provider.includes("Hemat")) &&
-      !provider.includes("Sameday") && !provider.includes("Instant")) {
-    return "shopee";
-  }
-  return "instant";
-}
+import { getCourierName } from '../../services/order/courier_name.js';
+import { shouldSkipOrder } from '../../services/order/shouldSkipOrder.js';
 
 client.subscribe('checkStockOrder', async ({ task, taskService }) => {
   const fileName = "Order.all.xlsx"; // task.variables.get("file");
@@ -32,7 +17,11 @@ client.subscribe('checkStockOrder', async ({ task, taskService }) => {
   let data;
   if (fileName.includes('Order.all')) {
     console.log('shopee check');
-    data = await orderShopee(fileName);
+    try {
+      data = await orderShopee(fileName);
+    } catch (error) {
+      console.error('gagal: ', error);
+    }
   } else if (fileName.includes('Semua pesanan')) {
     console.log('tokopedia');
     data = await orderTokopedia(fileName);
@@ -55,21 +44,8 @@ client.subscribe('checkStockOrder', async ({ task, taskService }) => {
         items
       } = order;
 
-      const lowerStatus = orderStatus.toLowerCase();
-      const lowerProvider = shipingProvider.toLowerCase();
-
-      if (
-        orderStatus !== 'Perlu Dikirim  ' &&
-        !(
-          orderStatus === 'To ship Awaiting collection' ||
-          (
-            (lowerProvider.includes('sameday') ||
-              lowerProvider.includes('same day') ||
-              lowerProvider.includes('instant')) &&
-            orderStatus === 'To ship Awaiting shipment'
-          )
-        )
-      ) {
+      if (shouldSkipOrder(orderStatus, shipingProvider)) {
+        console.log(`[Skip] ${orderStatus}`);
         continue;
       }
 
@@ -83,14 +59,22 @@ client.subscribe('checkStockOrder', async ({ task, taskService }) => {
 
       for (const item of items) {
         const { sku, amount, startingPrice } = item;
-        const stockLocation = await getLocation(sku);
+        let skuPrefix = null;
+        if (sku.includes('-')) {
+          const skuParts = sku.split('-');
+          skuPrefix = skuParts[0]; // Sebelum '-' pertama
+          console.log(`SKU: ${sku}, Prefix: ${skuPrefix}, Suffix: ${skuSuffix}`);
+        } else {
+          skuPrefix = sku;
+          console.log(`SKU: ${sku} tidak memiliki '-' → skip parsing`);
+        }
+        const stockLocation = await getLocation(skuPrefix);
         const stock = await getStock(stockLocation);
-        const quantity = stock.quantity;
-
+        const quantity = stock;
         const available = (quantity - amount) >= 0;
         check.push(available);
 
-        const itemId = await getItems(sku);
+        const itemId = await getItems(skuPrefix);
         itemIds.push(itemId);
         quantities.push(amount);
         prices.push(startingPrice);
@@ -99,9 +83,9 @@ client.subscribe('checkStockOrder', async ({ task, taskService }) => {
       const allFalse = check.every(val => val === false);
       if (!allFalse) continue;
 
-      await insertStockCheck(invoice, proc_inst_id);
+      // await insertStockCheck(invoice, proc_inst_id);
 
-      const courierName = getCourierName(shipingProvider);
+      const courierName = await getCourierName(shipingProvider);
 
       invoiceCamunda.push(invoice);
       resiCamunda.push(noResi);

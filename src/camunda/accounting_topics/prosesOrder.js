@@ -12,11 +12,29 @@ import { updateStatusMp } from '../../graphql/mutation/updateStatusMoOrder.js';
 import { insertMoOrderCost } from '../../graphql/mutation/insertMoOrderCost.js';
 import { getItem } from '../../services/inventory/stock/getItemInventree.js';
 import { cancelInvoice } from '../../services/order/cancel.js';
+import { getCourierName } from '../../services/order/courier_name.js';
+import { shouldSkipOrder } from '../../services/order/shouldSkipOrder.js';
+async function getLorong(sku) {
+  const match = sku.match(/^(\d+)/);
+  const result = match ? parseInt(match[1], 10) : null;
 
+  if (result !== null) {
+    if (result <= 7 || result === 15) {
+      return 1;
+    } else if ([8, 9, 11, 12, 14, 16, 17].includes(result)) {
+      return 2;
+    } else if ([10, 13, 18].includes(result) || (result >= 19 && result <= 21)) {
+      return 3;
+    }
+  }
+
+  return null;
+}
 // Subscribe to the "prosesOrder" task from Camunda
 client.subscribe('processOrder', async ({ task, taskService }) => {
   // Retrieve file name variable from the task
-  const fileName = "Order.all3.xlsx"// task.variables.get("file");
+  const fileName = "Order.all4.xlsx" //task.variables.get("file");
+  console.log('file: ', fileName);
 
   let data;
 
@@ -56,25 +74,12 @@ client.subscribe('processOrder', async ({ task, taskService }) => {
       } = order;
       
       // Gunakan kondisi original untuk menghindari perubahan logika
-      if (
-        orderStatus !== 'Perlu Dikirim  ' && 
-        !(
-          orderStatus === 'To ship Awaiting collection' ||
-          (
-            (
-              shipingProvider.toLowerCase().includes('sameday') ||
-              shipingProvider.toLowerCase().includes('same day') ||
-              shipingProvider.toLowerCase().includes('instant')
-            ) &&
-            orderStatus === 'To ship Awaiting shipment'
-          )
-        )
-      ) {
-        console.log('skip: ', orderStatus);
+      if (shouldSkipOrder(orderStatus, shipingProvider)) {
+        console.log(`[Skip] ${orderStatus}`);
         if (orderStatus.toLowerCase().includes('batal') || orderStatus.toLowerCase().includes('cancel')) {
-          await cancelInvoice(invoice, staorderStatustus)
+          // await cancelInvoice(invoice, orderStatus);
         } else {
-          updateStatusMp(orderStatus, invoice)
+          // await updateStatusMp(orderStatus, invoice);
         }
         continue;
       }
@@ -87,46 +92,49 @@ client.subscribe('processOrder', async ({ task, taskService }) => {
       const itemIds = [];
       const quantities = [];
       const prices = [];
-      
+      const konfersi = [];
+      const lorong = [];
       // Loop through each item in the order
       for (const item of items) {
         const sku = item.sku;
         const amount = item.amount;
         const startingPrice = item.startingPrice;
         const productName = item.productName;
-        const getItemInventree = await getItem(sku);
-        await insertMoOrderShop(invoice, noResi, productName, amount, sku, getItemInventree.part)
+        // Parsing SKU
+        let skuPrefix = null;
+        let skuSuffix = null;
+        let quantityKonfersi;
+        if (sku.includes('-')) {
+          const skuParts = sku.split('-');
+          skuPrefix = skuParts[0]; // Sebelum '-' pertama
+          skuSuffix = skuParts[skuParts.length - 1]; // Setelah '-' terakhir
+          quantityKonfersi =  amount * parseInt(skuSuffix)
+          konfersi.push(quantityKonfersi);
+          console.log(`SKU: ${sku}, Prefix: ${skuPrefix}, Suffix: ${skuSuffix}`);
+        } else {
+          skuPrefix = sku;
+          skuSuffix = "1";
+          quantityKonfersi =  amount
+          konfersi.push(quantityKonfersi);
+          console.log(`SKU: ${sku} tidak memiliki '-' → skip parsing`);
+        }
+        lorong.push(await getLorong(skuSuffix));
+        const getItemInventree = await getItem(skuPrefix);
+        // await insertMoOrderShop(invoice, noResi, productName, amount, sku, getItemInventree.part, quantityKonfersi)
         // Get item ID from SKU
-        const itemId = await getItems(sku);
+        const itemId = await getItems(skuPrefix);
         itemIds.push(itemId);
         quantities.push(amount);
         prices.push(startingPrice);
+
       }
-      let courir_name;
-      if (shipingProvider.includes("JNE")) {
-        courir_name = "JNE"
-      }else if (shipingProvider.includes("Rekomendasi")){
-        courir_name = "rekomendasi"
-      }else if (shipingProvider.includes("SiCepat")){
-        courir_name = "sicepat"
-      }else if (shipingProvider.includes("j&t") && shipingProvider.includes("Cargo") || shipingProvider.includes("Kargo") ){
-        courir_name = "j&t cargo"
-      }else if (shipingProvider.includes("j&t")){
-        courir_name = "j&t"
-      }else if (shipingProvider.includes("Paxel")){
-        courir_name = "paxel"
-      }else if (shipingProvider.includes("GTL(Regular)")){
-        courir_name = "gtl"
-      }else if (
-        (shipingProvider.includes("SPX") || shipingProvider.includes("Hemat")) &&
-        !shipingProvider.includes("Sameday") &&
-        !shipingProvider.includes("Instant")
-      ){
-        courir_name = "shopee"
-      }else{
-        courir_name = "instant"
-      }
-      await insertMoOrder(invoice, noResi, orderStatus, courir_name)
+      const uniqueLorong = [...new Set(lorong.filter(l => l !== null))];
+      // Urutkan untuk konsistensi hasil output
+      uniqueLorong.sort((a, b) => a - b);
+      // Gabungkan hasil sebagai string
+      const finalLorong = uniqueLorong.join(',');
+      const courir_name = await getCourierName(shipingProvider);
+      // await insertMoOrder(invoice, noResi, orderStatus, courir_name,finalLorong)
       // Create an invoice for the current order
       await createInvoice(
         customerId,
@@ -134,7 +142,7 @@ client.subscribe('processOrder', async ({ task, taskService }) => {
         invoice,
         noResi,
         itemIds,
-        quantities,
+        konfersi,
         prices
       );
       // await insertMoOrderCost(invoice, ShippingFee)
@@ -152,13 +160,8 @@ client.subscribe('processOrder', async ({ task, taskService }) => {
     const dataCourier = shippingProviders.join(',');
     const dataJumlah = jumlah;
     const dataNow = now;
-    console.log(dataInv, dataCourier, dataJumlah,dataNow);
     
     const variablesCamunda = new Variables();
-    // variablesCamunda.set("countInvoice", 3);
-    // variablesCamunda.set("invoice", "2504268R4DM0RS,2504268R5UEMUP,2504268RCTJUVG");
-    // variablesCamunda.set("courier_name", "shopee,shopee,shopee");
-    // variablesCamunda.set("date_time", "2025-05-10 06:29:38");
     variablesCamunda.set("countInvoice", dataJumlah);
     variablesCamunda.set("invoice", dataInv);
     variablesCamunda.set("courier_name", dataCourier);
