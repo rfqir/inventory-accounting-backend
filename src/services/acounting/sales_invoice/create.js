@@ -1,4 +1,5 @@
 import httpClient from '../../../utils/httpClient.js';
+import { insertSalesInvoiceAndItems } from '../../../mysql/controllers/createInvoice.js';
 
 function addDays(dateStr, days) {
     const date = new Date(dateStr);
@@ -25,25 +26,35 @@ async function createInvoice(customerId, invoiceDate, invoice, resi, itemIds, qu
     }));
 
     const dueDate = addDays(invoiceDate, 30);
-    const data = {
-        customer_id: customerId,
-        invoice_date: invoiceDate,
-        due_date: dueDate,
-        invoice_no: invoice,
-        reference_no: resi,
-        delivered: false,
-        entries: entries
-    };
+    // const data = {
+    //     customer_id: customerId,
+    //     invoice_date: invoiceDate,
+    //     due_date: dueDate,
+    //     invoice_no: invoice,
+    //     reference_no: resi,
+    //     delivered: false,
+    //     entries: entries
+    // };
 
     try {
-        const response = await httpClient.post('/sales/invoices', data);
+        await insertSalesInvoiceAndItems({
+  customerId,
+  invoiceDate,
+  invoiceNo: invoice,
+  referenceNo: resi,
+  duedate: dueDate,
+  entries
+});
+
+        // const response = await httpClient.post('/sales/invoices', data);
         
-        if (response && response.status === 200) {
-            return response.data;  // Assuming the data is returned in the 'data' property
-        } else {
-            console.error('Failed to create invoice, status:', response.status);
-            throw new Error('Invoice creation failed');
-        }
+        // if (response && response.status === 200) {
+        //     return response.data;  // Assuming the data is returned in the 'data' property
+        // } else {
+        //     console.error('Failed to create invoice, status:', response.status);
+        //     throw new Error('Invoice creation failed');
+        // }
+        return { success: true, message: 'Invoice created successfully' };
     } catch (error) {
         console.error('Error creating invoice:', error.message);
         throw error;  // Rethrow the error to propagate it

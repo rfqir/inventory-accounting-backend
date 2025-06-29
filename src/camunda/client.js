@@ -12,7 +12,7 @@ export function handleFailureDefault(taskService, task, error) {
 const client = new Client({
   baseUrl: process.env.ENDPOINT_CAMUNDA,
   use: logger,
-  asyncResponseTimeout: 100,
+  asyncResponseTimeout: 30000,
 });
 console.log(process.env.ENDPOINT_CAMUNDA);
 

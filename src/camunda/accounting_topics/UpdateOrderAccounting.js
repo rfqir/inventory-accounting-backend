@@ -7,7 +7,10 @@ import { createCreditNote } from '../../services/acounting/credit_note/create.js
 client.subscribe('updateOrderAccounting', async ({ task, taskService }) => {
   const invoice = task.variables.get('invoice');
   const items = task.variables.get('items');
-
+  const dropship = task.variables.get('dropship');
+	if (dropship){
+	await taskService.complete(task);
+	}
   const beforeSku = items.map(item => item.before.sku_toko);
   const beforeQty = items.map(item => item.before.quantity_order);
   const afterSku = items.map(item => item.after.sku_toko);

@@ -1,9 +1,26 @@
 import fs from 'fs';
 import XLSX from 'xlsx';
 
+function formatDateToYMD(dateString) {
+  if (typeof dateString !== 'string' || !dateString.includes('/')) {
+    console.warn('Invalid date format:', dateString);
+    return null;
+  }
+
+  const [datePart] = dateString.split(' ');
+  const [day, month, year] = datePart.split('/');
+
+  if (!day || !month || !year) {
+    console.warn('Incomplete date parts:', datePart);
+    return null;
+  }
+
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} 00:00`;
+}
+
 // Baca file excel
 async function orderTokopedia(fileName) {
-  const workbook = XLSX.readFile(`./assets/excel/${fileName}`);
+  const workbook = XLSX.readFile(`../portal-mirorim/server-doc/${fileName}`);
   const sheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[sheetName];
   const jsonData = XLSX.utils.sheet_to_json(worksheet);
@@ -19,8 +36,8 @@ async function orderTokopedia(fileName) {
       orders[noPesanan] = {
         'invoice': noPesanan,
         'noResi': row['Tracking ID'],
-        'orderStatus': `${row['Order Status']} ${row['Order Substatus']} ${row['Cancelation/Return Type']}`,
-        'paidTime': row['Paid Time'],
+        'orderStatus': `tokopedia ${row['Order Status']} ${row['Order Substatus']} ${row['Cancelation/Return Type']}`,
+        'paidTime': row['Paid Time'] ? formatDateToYMD(row['Paid Time']) : null,
         'totalPembayaran': row['Order Amount'],
         'username': row['Buyer Username'],
         'recipient': row['Recipient'],
@@ -32,7 +49,7 @@ async function orderTokopedia(fileName) {
   
     // Masukkan produk ke items
     orders[noPesanan].items.push({
-      'productName': row['Product Name'],
+      'productName': `${row['Product Name']} (${row['Variation']})`,
       'sku': row['Seller SKU'],
       'variationName': row['Variation'],
       'startingPrice': row['SKU Unit Original Price'],

@@ -2,6 +2,8 @@
 import httpClient from '../client.js';
 
 async function insertMoOrderPrint(invoice, proc_inst_id,courier_name) {
+  console.log(`Inserting mo_order_print with invoice: ${invoice}, proc_inst_id: ${proc_inst_id}, courier_name: ${courier_name}`);
+
   const query = `
     mutation CreateMoOrderPrint(
       $invoice: String!,

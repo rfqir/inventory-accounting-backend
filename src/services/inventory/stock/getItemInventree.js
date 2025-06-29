@@ -1,11 +1,11 @@
 import { getLocation } from './getLocation.js';
-import { getStock } from './getStock.js';
+import { getPart } from './getPart.js';
 
 async function getItem(locationName) {
     try {
         const location = await getLocation(locationName);
         try {
-            const item = await getStock(location);
+            const item = await getPart(location);
             return item;
         } catch (error) {
             console.error('error get stock');

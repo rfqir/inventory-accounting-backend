@@ -4,12 +4,14 @@ import { cancelOrder } from '../../camunda/signal/cancelOrder.js';
 
 async function cancelInvoice(invoice, status) {
   try {
-    const { proc_inst_id: instanceId } = await getInstantMoOrder(invoice);
+    const result = await getInstantMoOrder(invoice);
 
-    if (!instanceId) {
+    if (!result || !result.proc_inst_id) {
       console.warn(`No instance found for cancel invoice: ${invoice}`);
       return null;
     }
+
+    const { proc_inst_id: instanceId } = result;
 
     await updateStatusMp(status, invoice);
     const signalResult = await cancelOrder(invoice);
@@ -20,5 +22,6 @@ async function cancelInvoice(invoice, status) {
     throw error;
   }
 }
+
 
 export { cancelInvoice };

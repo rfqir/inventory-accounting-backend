@@ -3,7 +3,7 @@ import * as auth from '../services/inventory/auth/auth.js';
 
 const httpClient = axios.create({
   baseURL: process.env.INVENTORY || 'http://localhost/api',
-  timeout: 1000,
+  timeout: 300000,
   headers: {
     'Content-Type': 'application/json',
   },
