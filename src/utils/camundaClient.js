@@ -26,4 +26,4 @@ httpClient.interceptors.response.use(
   }
 );
 
-export default httpClient;
+export {httpClient};

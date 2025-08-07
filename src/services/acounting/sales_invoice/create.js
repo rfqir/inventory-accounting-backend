@@ -9,7 +9,10 @@ function addDays(dateStr, days) {
 
 async function createInvoice(customerId, invoiceDate, invoice, resi, itemIds, quantities, sellPrice) {
     console.log('masuk invoice');
-    
+    if (!invoiceDate) {
+        const today = new Date();
+        invoiceDate = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    }
     if (!Array.isArray(itemIds) || !Array.isArray(quantities) || itemIds.length !== quantities.length || itemIds.length !== sellPrice.length) {
         console.log('gagal');
         
@@ -26,34 +29,34 @@ async function createInvoice(customerId, invoiceDate, invoice, resi, itemIds, qu
     }));
 
     const dueDate = addDays(invoiceDate, 30);
-    // const data = {
-    //     customer_id: customerId,
-    //     invoice_date: invoiceDate,
-    //     due_date: dueDate,
-    //     invoice_no: invoice,
-    //     reference_no: resi,
-    //     delivered: false,
-    //     entries: entries
-    // };
+    const data = {
+        customer_id: customerId,
+        invoice_date: invoiceDate,
+        due_date: dueDate,
+        invoice_no: invoice,
+        reference_no: resi,
+        delivered: false,
+        entries: entries
+    };
 
     try {
-        await insertSalesInvoiceAndItems({
-  customerId,
-  invoiceDate,
-  invoiceNo: invoice,
-  referenceNo: resi,
-  duedate: dueDate,
-  entries
-});
+//         await insertSalesInvoiceAndItems({
+//   customerId,
+//   invoiceDate,
+//   invoiceNo: invoice,
+//   referenceNo: resi,
+//   duedate: dueDate,
+//   entries
+// });
 
-        // const response = await httpClient.post('/sales/invoices', data);
+        const response = await httpClient.post('/sales/invoices', data);
         
-        // if (response && response.status === 200) {
-        //     return response.data;  // Assuming the data is returned in the 'data' property
-        // } else {
-        //     console.error('Failed to create invoice, status:', response.status);
-        //     throw new Error('Invoice creation failed');
-        // }
+        if (response && response.status === 200) {
+            return response.data;  // Assuming the data is returned in the 'data' property
+        } else {
+            console.error('Failed to create invoice, status:', response.status);
+            throw new Error('Invoice creation failed');
+        }
         return { success: true, message: 'Invoice created successfully' };
     } catch (error) {
         console.error('Error creating invoice:', error.message);

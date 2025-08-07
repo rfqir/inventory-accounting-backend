@@ -11,14 +11,14 @@ export async function getStocks(sku) {
         const placeholders = sku.map((_, i) => `$${i + 1}`).join(", ");
 
         const query = `
-            SELECT ssi.part_id, SUM(ssi.quantity) AS total, ssl.name as sku
+            SELECT ssi.part_id, SUM(ssi.quantity) AS total, MAX(case when ssl.description = 'TOKO' then ssl.name end ) as sku
             FROM public.stock_stockitem ssi
             JOIN public.stock_stockitem ssi_inner
                 ON ssi.part_id = ssi_inner.part_id
             JOIN public.stock_stocklocation ssl
                 ON ssi_inner.location_id = ssl.id
             WHERE ssl.name IN (${placeholders})
-            GROUP BY ssi.part_id,ssl.name
+            GROUP BY ssi.part_id
         `;
 
         const { rows } = await pool.query(query, sku); // Eksekusi query dengan parameter

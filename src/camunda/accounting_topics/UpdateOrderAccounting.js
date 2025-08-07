@@ -26,6 +26,9 @@ client.subscribe('updateOrderAccounting', async ({ task, taskService }) => {
       });
     }
   }
+  if (decreasedItems.length == 0){
+  await taskService.complete(task);
+  }
   console.log('Detail pengurangan:', decreasedItems);
 
   try {

@@ -3,7 +3,7 @@ import axios from 'axios';
 async function cancelOrder(invoice) {
   try {
     const body = {
-      name: `cancel${invoice}`
+      name: `cancelOrder${invoice}`
     };
 
     const response = await axios.post(

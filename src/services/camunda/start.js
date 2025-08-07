@@ -1,8 +1,10 @@
-import httpClient from '../../utils/camundaClient.js';
+import {httpClient} from '../../utils/camundaClient.js';
 import {insertRefill} from '../../graphql/mutation/insertRefill.js';
+import {getCurrentDateTimeString} from '../../utils/time.js';
 async function processOrder(Invoice, courier_name,date ) {
     try {
-        const businessKey = Invoice + ':' + courier_name + ':' + date;
+    	const waktu = getCurrentDateTimeString();
+        const businessKey = Invoice + ':' + courier_name + ':' + waktu;
         console.log('busines: ', businessKey)
         const nama = "StartNewInstanceInvoices";
         const data = {

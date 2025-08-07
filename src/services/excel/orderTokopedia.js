@@ -7,7 +7,7 @@ function formatDateToYMD(dateString) {
     return null;
   }
 
-  const [datePart] = dateString.split(' ');
+  const [datePart, timePart = '00:00'] = dateString.split(' ');
   const [day, month, year] = datePart.split('/');
 
   if (!day || !month || !year) {
@@ -15,7 +15,7 @@ function formatDateToYMD(dateString) {
     return null;
   }
 
-  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} 00:00`;
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}`;
 }
 
 // Baca file excel
@@ -38,8 +38,9 @@ async function orderTokopedia(fileName) {
         'noResi': row['Tracking ID'],
         'orderStatus': `tokopedia ${row['Order Status']} ${row['Order Substatus']} ${row['Cancelation/Return Type']}`,
         'paidTime': row['Paid Time'] ? formatDateToYMD(row['Paid Time']) : null,
+	'RTSTime': row['RTS Time'] ? formatDateToYMD(row['RTS Time']) : null,
         'totalPembayaran': row['Order Amount'],
-        'username': row['Buyer Username'],
+        'username': row['Recipient'],
         'recipient': row['Recipient'],
         'shipingProvider': `${row['Delivery Option']} ${row['Shipping Provider Name']}`,
         'ShippingFee': row['Original Shipping Fee'],
@@ -52,7 +53,7 @@ async function orderTokopedia(fileName) {
       'productName': `${row['Product Name']} (${row['Variation']})`,
       'sku': row['Seller SKU'],
       'variationName': row['Variation'],
-      'startingPrice': row['SKU Unit Original Price'],
+      'startingPrice': (row['SKU Subtotal After Discount'] / row['Quantity']) || row['SKU Unit Original Price'],
       'priceAfterDiscount': row['SKU Unit Original Price'] - row['SKU Platform Discount'],
       'amount': row['Quantity'],
       'totalPrice': row['SKU Subtotal Before Discount'],

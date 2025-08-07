@@ -5,7 +5,9 @@ async function insertMoOrderShop(invoice, resi, product_name, quantity_order, sk
 if (!resi) {
   resi = '-';
 }
-
+if (!part_pk){
+part_pk = 0;
+}
   const unique_id = `${invoice}-${sku_toko}-${product_name.slice(-20)}`;
   const query = `
     mutation CreateOrder(
@@ -47,6 +49,7 @@ if (!resi) {
     return response.data.data.insert_mo_order_shop.returning[0];
   } catch (error) {
     console.error('Error creating order:', error);
+    console.error('var ',variables)
     throw error;
   }
 }

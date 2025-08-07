@@ -3,7 +3,9 @@ import httpClient from '../client.js';
 
 async function updateResi(invoice, resi) {
   try {
-
+if (!resi) {
+  resi = '-';
+}
     const mutationOrder = `
       mutation updateResi($resi: String!, $invoice: String!) {
         update_mo_order(

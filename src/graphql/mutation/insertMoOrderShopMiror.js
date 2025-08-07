@@ -2,6 +2,9 @@
 import httpClient from '../client.js';
 
 async function insertMoOrderShopMiror(invoice, resi, product_name, quantity_order, sku_toko,part_pk,quantity_convert) {
+if (!part_pk){
+part_pk = 0;
+}
   const query = `
     mutation CreateOrder(
       $invoice: String!,
@@ -40,6 +43,7 @@ async function insertMoOrderShopMiror(invoice, resi, product_name, quantity_orde
     return response.data.data.insert_mo_order_shop_miror.returning[0];
   } catch (error) {
     console.error('Error creating order:', error);
+    console.error('var ', variables)
     throw error;
   }
 }

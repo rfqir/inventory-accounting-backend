@@ -19,8 +19,9 @@ async function orderShopee(fileName) {
         'noResi': row['No. Resi'],
         'orderStatus': `shopee ${row['Status Pesanan']} ${row['Alasan Pembatalan']} ${row['Status Pembatalan/ Pengembalian']}`,
         'paidTime': row['Waktu Pembayaran Dilakukan'],
+	'RTSTime': row['Waktu Pengiriman Diatur'] ? row['Waktu Pengiriman Diatur'] : null,
         'totalPembayaran': row['Total Pembayaran'],
-        'username': row['Username (Pembeli)'],
+        'username': row['Nama Penerima'],
         'recipient': row['Nama Penerima'],
         'shipingProvider': row['Opsi Pengiriman'],
         'ShippingFee': row['Perkiraan Ongkos Kirim'],
@@ -31,9 +32,9 @@ async function orderShopee(fileName) {
     // Masukkan produk ke items
     orders[noPesanan].items.push({
       'productName': `${row['Nama Produk']} (${row['Nama Variasi']})`,
-      'sku': row['Nomor Referensi SKU'],
+      'sku': row['Nomor Referensi SKU'] === '' ? 'none' : row['Nomor Referensi SKU'],
       'variationName': row['Nama Variasi'],
-      'startingPrice': Number(String(row['Harga Awal']).replace(/\./g, '')),
+      'startingPrice': Number(String(row['Harga Setelah Diskon']).replace(/\./g, '')) || Number(String(row['Harga Awal']).replace(/\./g, '')),
       'priceAfterDiscount': Number(String(row['Harga Setelah Diskon']).replace(/\./g, '')),
       'amount': Number(String(row['Jumlah']).replace(/\./g, '')),
       'totalPrice': Number(String(row['Total Harga Produk']).replace(/\./g, '')),
